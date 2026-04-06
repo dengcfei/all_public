@@ -7,7 +7,14 @@ from typing import Iterable
 
 import requests
 
-from .models import Announcement
+from .models import Announcement, TitleSearchResult
+
+
+RESULT_HEADLINE_CATEGORIES: dict[str, tuple[str, str]] = {
+    "final": ("13300", "Final Results"),
+    "interim": ("13400", "Interim Results"),
+    "quarterly": ("13600", "Quarterly Results"),
+}
 
 
 class HKEXClient:
@@ -119,6 +126,16 @@ class HKEXClient:
 
     def resolve_stock_id(self, stock_code: str, market: str = "SEHK", lang: str = "ZH") -> int:
         """Resolve HKEX internal stockId from user stock code using prefix search API."""
+        stock_id, _ = self.resolve_stock(stock_code=stock_code, market=market, lang=lang)
+        return stock_id
+
+    def resolve_stock(
+        self,
+        stock_code: str,
+        market: str = "SEHK",
+        lang: str = "ZH",
+    ) -> tuple[int, str]:
+        """Resolve HKEX internal stockId and stock short name for a stock code."""
         code = stock_code.strip().zfill(5)
         url = f"{self.BASE_URL}/search/prefix.do"
         response = self.session.get(
@@ -146,9 +163,60 @@ class HKEXClient:
         for item in items:
             item_code = str(item.get("code") or "").strip().zfill(5)
             if item_code == code:
-                return int(item["stockId"])
+                return int(item["stockId"]), str(item.get("name") or "").strip()
 
         raise ValueError(f"Stock code not found on HKEX: {stock_code}")
+
+    def search_result_announcements(
+        self,
+        stock_code: str,
+        from_date: str,
+        to_date: str,
+        market: str = "SEHK",
+        lang: str = "EN",
+        result_types: Iterable[str] | None = None,
+    ) -> list[TitleSearchResult]:
+        stock_id, stock_name = self.resolve_stock(stock_code=stock_code, market=market, lang=lang)
+        selected_types = list(result_types or RESULT_HEADLINE_CATEGORIES.keys())
+
+        seen_urls: set[str] = set()
+        matches: list[TitleSearchResult] = []
+        for result_type in selected_types:
+            if result_type not in RESULT_HEADLINE_CATEGORIES:
+                raise ValueError(f"Unsupported result type: {result_type}")
+
+            headline_code, headline_name = RESULT_HEADLINE_CATEGORIES[result_type]
+            html = self._post_title_search(
+                stock_id=stock_id,
+                from_date=from_date,
+                to_date=to_date,
+                market=market,
+                lang=lang,
+                t1code="10000",
+                t2gcode="3",
+                t2code=headline_code,
+            )
+            for item in self._parse_title_search_results(
+                html=html,
+                stock_code=stock_code,
+                stock_name=stock_name,
+                headline_category_code=headline_code,
+                headline_category_name=headline_name,
+            ):
+                if item.url in seen_urls:
+                    continue
+                seen_urls.add(item.url)
+                matches.append(item)
+
+        matches.sort(
+            key=lambda item: (
+                self._parse_release_time(item.release_time),
+                item.headline_category_code,
+                item.url,
+            ),
+            reverse=True,
+        )
+        return matches
 
     def find_annual_report_url(
         self,
@@ -196,6 +264,93 @@ class HKEXClient:
                 return max(unique_urls, key=_url_date_key)
 
         return None
+
+    def _post_title_search(
+        self,
+        stock_id: int,
+        from_date: str,
+        to_date: str,
+        market: str,
+        lang: str,
+        t1code: str,
+        t2gcode: str,
+        t2code: str,
+        title: str = "",
+    ) -> str:
+        response = self.session.post(
+            f"{self.BASE_URL}/search/titlesearch.xhtml",
+            params={"lang": lang.lower()},
+            data={
+                "lang": lang,
+                "market": market,
+                "searchType": "1",
+                "documentType": "",
+                "t1code": t1code,
+                "t2Gcode": t2gcode,
+                "t2code": t2code,
+                "stockId": str(stock_id),
+                "from": from_date,
+                "to": to_date,
+                "category": "0",
+                "title": title,
+            },
+            timeout=self.timeout_seconds,
+        )
+        response.raise_for_status()
+        return response.text
+
+    def _parse_title_search_results(
+        self,
+        html: str,
+        stock_code: str,
+        stock_name: str,
+        headline_category_code: str,
+        headline_category_name: str,
+    ) -> list[TitleSearchResult]:
+        row_blocks = re.findall(r"<tr[^>]*>.*?</tr>", html, flags=re.IGNORECASE | re.DOTALL)
+        matches: list[TitleSearchResult] = []
+        for row in row_blocks:
+            link_match = re.search(
+                r'href="(/listedco/listconews/[^"]+\.(?:pdf|doc|docx|xls|xlsx|zip))"[^>]*>(.*?)</a>',
+                row,
+                flags=re.IGNORECASE | re.DOTALL,
+            )
+            if not link_match:
+                continue
+
+            release_match = re.search(r"(\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2})", row)
+            if not release_match:
+                continue
+
+            title = self._normalize_html_text(link_match.group(2))
+            if not title:
+                continue
+
+            matches.append(
+                TitleSearchResult(
+                    stock_code=stock_code.strip().zfill(5),
+                    stock_name=stock_name,
+                    release_time=release_match.group(1),
+                    title=title,
+                    headline_category_code=headline_category_code,
+                    headline_category_name=headline_category_name,
+                    url=f"{self.BASE_URL}{link_match.group(1)}",
+                )
+            )
+
+        return matches
+
+    @staticmethod
+    def _normalize_html_text(raw: str) -> str:
+        no_tags = re.sub(r"<[^>]+>", "", raw)
+        return re.sub(r"\s+", " ", no_tags).strip()
+
+    @staticmethod
+    def _parse_release_time(value: str) -> datetime:
+        try:
+            return datetime.strptime(value, "%d/%m/%Y %H:%M")
+        except ValueError:
+            return datetime.min
 
     def _search_annual_report_url(
         self,

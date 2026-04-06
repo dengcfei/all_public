@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
 
-from .models import Announcement
+from .models import Announcement, TitleSearchResult
 
 
 def _safe_name(value: str) -> str:
@@ -57,4 +58,20 @@ def build_annual_target_path(base_dir: Path, stock_code: str, year: int, url: st
     suffix = Path(urlparse(url).path).suffix or ".pdf"
     safe_code = _safe_name(stock_code.zfill(5))
     filename = f"{safe_code}_{year}_annual_report{suffix}"
+    return base_dir / safe_code / filename
+
+
+def build_title_search_target_path(base_dir: Path, item: TitleSearchResult) -> Path:
+    parsed_url = urlparse(item.url)
+    suffix = Path(parsed_url.path).suffix or ".pdf"
+    basename = Path(parsed_url.path).stem or "document"
+    safe_code = _safe_name(item.stock_code.zfill(5))
+    category = _safe_name(item.headline_category_name.lower().replace(" ", "-"))
+
+    try:
+        stamp = datetime.strptime(item.release_time, "%d/%m/%Y %H:%M").strftime("%Y-%m-%d_%H%M")
+    except ValueError:
+        stamp = _safe_name(item.release_time.replace("/", "-").replace(":", ""))
+
+    filename = f"{stamp}_{safe_code}_{category}_{basename}{suffix}"
     return base_dir / safe_code / filename
