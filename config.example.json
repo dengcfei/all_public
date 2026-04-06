@@ -1,0 +1,11 @@
+{
+  "board": "sehk",
+  "window": "latest",
+  "pages": 2,
+  "stocks": ["00005", "00700"],
+  "include_non_financial": false,
+  "download_dir": "downloads",
+  "state_file": ".data/hkex_seen.sqlite3",
+  "interval": 300,
+  "timeout_seconds": 20
+}
