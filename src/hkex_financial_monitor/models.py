@@ -25,3 +25,46 @@ class Announcement:
     @property
     def absolute_url(self) -> str:
         return f"{HKEX_BASE}{self.web_path}"
+
+
+@dataclass(frozen=True)
+class TitleSearchResult:
+    stock_code: str
+    stock_name: str
+    release_time: str
+    title: str
+    headline_category_code: str
+    headline_category_name: str
+    url: str
+
+
+@dataclass(frozen=True)
+class FinancialExtraction:
+    source_type: str
+    page_count: int
+    text_length: int
+    currency: str = ""
+    unit: str = ""
+    revenue: str = ""
+    gross_profit: str = ""
+    operating_profit: str = ""
+    profit_for_period: str = ""
+    profit_attributable: str = ""
+    basic_eps: str = ""
+    diluted_eps: str = ""
+
+
+@dataclass(frozen=True)
+class DocumentProcessResult:
+    stock_code: str
+    stock_name: str
+    release_time: str
+    headline_category_code: str
+    headline_category_name: str
+    title: str
+    url: str
+    file_path: str
+    status: str
+    downloaded: bool
+    error_message: str = ""
+    extraction: FinancialExtraction | None = None

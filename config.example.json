@@ -7,5 +7,12 @@
   "download_dir": "downloads",
   "state_file": ".data/hkex_seen.sqlite3",
   "interval": 300,
-  "timeout_seconds": 20
+  "timeout_seconds": 20,
+  "years": 10,
+  "result_types": "final,interim,quarterly",
+  "limit": 0,
+  "workers": 4,
+  "log_csv": "downloads/hkex_results_log.csv",
+  "pdf_max_pages": 12,
+  "force_reprocess": false
 }
