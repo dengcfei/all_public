@@ -13,6 +13,10 @@ class SecClient:
 
     SUBMISSIONS_BASE = "https://data.sec.gov"
     TICKER_MAP_URL = "https://www.sec.gov/files/company_tickers.json"
+    KNOWN_TICKER_TO_CIK = {
+        "AAPL": "0000320193",
+        "APPL": "0000320193",
+    }
 
     def __init__(self, timeout_seconds: int = 20, user_agent: str = "lobster-reports-monitor/1.0 (contact: dev@example.com)") -> None:
         self.timeout_seconds = timeout_seconds
@@ -21,6 +25,7 @@ class SecClient:
             {
                 "User-Agent": user_agent,
                 "Accept": "application/json,text/plain,*/*",
+                "Accept-Encoding": "gzip, deflate",
             }
         )
         self._ticker_map_cache: dict[str, dict[str, Any]] | None = None
@@ -36,18 +41,26 @@ class SecClient:
         if not ticker_clean:
             raise ValueError("Provide either --cik or --ticker")
 
-        ticker_map = self._load_ticker_map()
-        item = ticker_map.get(ticker_clean)
-        if item is None:
-            raise ValueError(f"Ticker not found in SEC mapping: {ticker_clean}")
+        try:
+            ticker_map = self._load_ticker_map()
+            item = ticker_map.get(ticker_clean)
+            if item is not None:
+                cik10 = str(item.get("cik_str", "")).zfill(10)
+                name = str(item.get("title", "")).strip()
+                return cik10, ticker_clean, name
+        except requests.RequestException:
+            pass
 
-        cik10 = str(item.get("cik_str", "")).zfill(10)
-        name = str(item.get("title", "")).strip()
-        return cik10, ticker_clean, name
+        known_cik = self.KNOWN_TICKER_TO_CIK.get(ticker_clean)
+        if known_cik:
+            return known_cik, ticker_clean, ""
+
+        raise ValueError(f"Ticker not found in SEC mapping: {ticker_clean}. Try --cik directly.")
 
     def fetch_recent_filings(self, cik: str, ticker: str = "", company_name: str = "") -> list[SecFiling]:
         response = self.session.get(
             f"{self.SUBMISSIONS_BASE}/submissions/CIK{cik}.json",
+            headers={"Host": "data.sec.gov"},
             timeout=self.timeout_seconds,
         )
         response.raise_for_status()

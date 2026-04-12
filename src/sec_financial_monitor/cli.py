@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
 from .client import SecClient
-from .downloader import download_filing
+from .downloader import download_filing_with_user_agent
 from .filters import looks_like_financial_report
 from .state import SeenState
 
@@ -111,7 +112,20 @@ def run_once(
     scanned = 0
     new_hits = 0
 
-    filings = client.fetch_recent_filings(cik=cik, ticker=ticker, company_name=company_name)
+    try:
+        filings = client.fetch_recent_filings(cik=cik, ticker=ticker, company_name=company_name)
+    except Exception as exc:
+        print(f"Direct SEC API failed, fallback to sec-edgar-downloader: {exc}", file=sys.stderr)
+        return run_once_with_package_fallback(
+            state=state,
+            cik=cik,
+            ticker=ticker,
+            report_types=report_types,
+            start_date=start_date,
+            end_date=end_date,
+            download_dir=download_dir,
+        )
+
     for filing in filings:
         scanned += 1
 
@@ -122,24 +136,129 @@ def run_once(
         if state.has_seen(filing.filing_id, filing.cik):
             continue
 
-        target = download_filing(filing, base_dir=download_dir, timeout_seconds=client.timeout_seconds)
-        state.mark_seen(
-            filing_id=filing.filing_id,
-            cik=filing.cik,
-            ticker=filing.ticker,
-            company_name=filing.company_name,
-            form_type=filing.form_type,
-            filing_date=filing.filing_date,
-            report_date=filing.report_date,
-            url=filing.document_url,
-            file_path=str(target),
-        )
+        try:
+            target = download_filing_with_user_agent(
+                filing,
+                base_dir=download_dir,
+                timeout_seconds=client.timeout_seconds,
+                user_agent=client.session.headers.get("User-Agent", ""),
+            )
+            if target.suffix.lower() == ".txt":
+                source_url = filing.txt_document_url
+            else:
+                source_url = filing.primary_document_url
 
-        new_hits += 1
-        print(
-            f"[NEW] {filing.filing_date} | {filing.ticker or filing.cik} {filing.company_name} | "
-            f"{filing.form_type} | {filing.description or filing.primary_document} | {target}"
-        )
+            state.mark_seen(
+                filing_id=filing.filing_id,
+                cik=filing.cik,
+                ticker=filing.ticker,
+                company_name=filing.company_name,
+                form_type=filing.form_type,
+                filing_date=filing.filing_date,
+                report_date=filing.report_date,
+                url=source_url,
+                file_path=str(target),
+            )
+
+            new_hits += 1
+            print(
+                f"[NEW] {filing.filing_date} | {filing.ticker or filing.cik} {filing.company_name} | "
+                f"{filing.form_type} | {filing.description or filing.primary_document} | {target}"
+            )
+        except Exception as exc:
+            print(
+                f"[WARN] {filing.filing_date} | {filing.form_type} | {filing.filing_id} | {exc}",
+                file=sys.stderr,
+            )
+        time.sleep(0.3)
+
+    return scanned, new_hits
+
+
+def run_once_with_package_fallback(
+    state: SeenState,
+    cik: str,
+    ticker: str,
+    report_types: set[str],
+    start_date: str,
+    end_date: str,
+    download_dir: Path,
+) -> tuple[int, int]:
+    try:
+        from sec_edgar_downloader import Downloader
+    except Exception as exc:
+        raise RuntimeError("sec-edgar-downloader is not installed") from exc
+
+    issuer = ticker or cik
+    package_root = download_dir / ".sec_package"
+    package_root.mkdir(parents=True, exist_ok=True)
+
+    # In this environment, SEC may reject email-like tokens in downloader identity.
+    downloader = Downloader("LobsterBot", "research-bot", download_folder=package_root)
+
+    form_types: list[str] = []
+    if "annual" in report_types:
+        form_types.append("10-K")
+    if "quarter" in report_types:
+        form_types.append("10-Q")
+    if "half" in report_types:
+        form_types.append("6-K")
+
+    scanned = 0
+    for form in form_types:
+        try:
+            scanned += int(
+                downloader.get(
+                    form,
+                    issuer,
+                    after=start_date,
+                    before=end_date,
+                    download_details=False,
+                )
+            )
+        except Exception as exc:
+            print(f"[WARN] fallback get failed for {form}: {exc}", file=sys.stderr)
+
+    source_root = package_root / "sec-edgar-filings" / issuer
+    if not source_root.exists():
+        return scanned, 0
+
+    target_dir = download_dir / issuer.upper()
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    new_hits = 0
+    for form_dir in sorted(source_root.iterdir()):
+        if not form_dir.is_dir():
+            continue
+        form = form_dir.name
+        for accession_dir in sorted(form_dir.iterdir()):
+            if not accession_dir.is_dir():
+                continue
+            submission_path = accession_dir / "full-submission.txt"
+            if not submission_path.exists():
+                continue
+
+            filing_id = accession_dir.name
+            if state.has_seen(filing_id, cik):
+                continue
+
+            target_path = target_dir / f"{issuer.upper()}_{form}_{filing_id}.txt"
+            if not target_path.exists() or target_path.stat().st_size == 0:
+                shutil.copy2(submission_path, target_path)
+
+            state.mark_seen(
+                filing_id=filing_id,
+                cik=cik,
+                ticker=issuer.upper(),
+                company_name=issuer.upper(),
+                form_type=form,
+                filing_date="",
+                report_date="",
+                url=str(submission_path),
+                file_path=str(target_path),
+            )
+            new_hits += 1
+            print(f"[NEW] fallback | {issuer.upper()} | {form} | {target_path}")
 
     return scanned, new_hits
 
