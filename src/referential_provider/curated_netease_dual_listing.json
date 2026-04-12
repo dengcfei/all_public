@@ -1,0 +1,101 @@
+{
+  "legal_entities": [
+    {
+      "entity_id": "ENTITY_HKEX_9999_HK",
+      "primary_name_en": "NetEase",
+      "primary_name_zh": "网易",
+      "country_of_incorporation": "KY",
+      "lei": null
+    }
+  ],
+  "instruments": [
+    {
+      "instrument_id": "INST_HKEX_9999_HK",
+      "entity_id": "ENTITY_HKEX_9999_HK",
+      "ticker": "9999.HK",
+      "exchange": "HKEX",
+      "currency": "HKD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": true,
+      "valid_from": "2020-06-11",
+      "valid_to": null
+    },
+    {
+      "instrument_id": "INST_NASDAQ_NTES",
+      "entity_id": "ENTITY_HKEX_9999_HK",
+      "ticker": "NTES",
+      "exchange": "NASDAQ",
+      "currency": "USD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": false,
+      "valid_from": "2000-06-30",
+      "valid_to": null
+    }
+  ],
+  "identifiers": [
+    {
+      "identifier_id": "ID_ENTITY_HKEX_9999_HK_EN",
+      "entity_id": "ENTITY_HKEX_9999_HK",
+      "namespace": "COMPANY_NAME_EN",
+      "value": "NetEase",
+      "valid_from": "2000-06-30",
+      "valid_to": null
+    },
+    {
+      "identifier_id": "ID_ENTITY_HKEX_9999_HK_ZH",
+      "entity_id": "ENTITY_HKEX_9999_HK",
+      "namespace": "COMPANY_NAME_ZH",
+      "value": "网易",
+      "valid_from": "2000-06-30",
+      "valid_to": null
+    },
+    {
+      "identifier_id": "ID_ENTITY_HKEX_9999_HK_ALIAS_9999HK",
+      "entity_id": "ENTITY_HKEX_9999_HK",
+      "namespace": "ALIAS",
+      "value": "9999.HK",
+      "valid_from": "2020-06-11",
+      "valid_to": null
+    },
+    {
+      "identifier_id": "ID_ENTITY_HKEX_9999_HK_ALIAS_SEHK9999",
+      "entity_id": "ENTITY_HKEX_9999_HK",
+      "namespace": "ALIAS",
+      "value": "SEHK:9999",
+      "valid_from": "2020-06-11",
+      "valid_to": null
+    },
+    {
+      "identifier_id": "ID_ENTITY_HKEX_9999_HK_ALIAS_NTES",
+      "entity_id": "ENTITY_HKEX_9999_HK",
+      "namespace": "ALIAS",
+      "value": "NTES",
+      "valid_from": "2000-06-30",
+      "valid_to": null
+    },
+    {
+      "identifier_id": "ID_ENTITY_HKEX_9999_HK_ALIAS_NETEASE",
+      "entity_id": "ENTITY_HKEX_9999_HK",
+      "namespace": "ALIAS",
+      "value": "NetEase",
+      "valid_from": "2000-06-30",
+      "valid_to": null
+    },
+    {
+      "identifier_id": "ID_ENTITY_HKEX_9999_HK_ALIAS_SIMPLIFIED",
+      "entity_id": "ENTITY_HKEX_9999_HK",
+      "namespace": "ALIAS",
+      "value": "网易",
+      "valid_from": "2000-06-30",
+      "valid_to": null
+    },
+    {
+      "identifier_id": "ID_ENTITY_HKEX_9999_HK_ALIAS_TRADITIONAL",
+      "entity_id": "ENTITY_HKEX_9999_HK",
+      "namespace": "ALIAS",
+      "value": "網易",
+      "valid_from": "2000-06-30",
+      "valid_to": null
+    }
+  ]
+}

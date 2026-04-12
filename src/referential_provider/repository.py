@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 from datetime import date
+import hashlib
 import re
+import time
 from typing import Any
 
+import akshare as ak
 from psycopg2.extras import RealDictCursor, execute_values
 
 from .config import DBConfig
 from .db import get_connection
+from .text_utils import chinese_variants
 
 
 class ReferentialRepository:
@@ -27,7 +31,9 @@ class ReferentialRepository:
             return []
 
         as_of_date = as_of or date.today()
-        wildcard = f"%{term}%"
+        terms = chinese_variants(term)
+        upper_terms = [item.upper() for item in terms]
+        wildcards = [f"%{item}%" for item in terms]
         with get_connection(self.config) as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(
@@ -48,16 +54,16 @@ class ReferentialRepository:
                     JOIN instruments i ON i.entity_id = le.entity_id
                     LEFT JOIN identifiers id ON id.entity_id = le.entity_id
                     WHERE
-                        (%s = upper(i.ticker)
-                         OR le.primary_name_en ILIKE %s
-                         OR coalesce(le.primary_name_zh, '') ILIKE %s
-                         OR coalesce(id.value, '') ILIKE %s)
+                                                (upper(i.ticker) = ANY(%s)
+                                                 OR le.primary_name_en ILIKE ANY(%s)
+                                                 OR coalesce(le.primary_name_zh, '') ILIKE ANY(%s)
+                                                 OR coalesce(id.value, '') ILIKE ANY(%s))
                       AND i.valid_from <= %s
                       AND (i.valid_to IS NULL OR i.valid_to >= %s)
                     ORDER BY le.entity_id, i.is_primary_listing DESC, i.ticker
                     LIMIT %s
                     """,
-                    (term.upper(), wildcard, wildcard, wildcard, as_of_date, as_of_date, max(1, min(limit, 200))),
+                                        (upper_terms, wildcards, wildcards, wildcards, as_of_date, as_of_date, max(1, min(limit, 200))),
                 )
                 return [dict(row) for row in cur.fetchall()]
 
@@ -128,7 +134,7 @@ class ReferentialRepository:
                         ) VALUES %s
                         ON CONFLICT (entity_id) DO UPDATE SET
                             primary_name_en = EXCLUDED.primary_name_en,
-                            primary_name_zh = EXCLUDED.primary_name_zh,
+                            primary_name_zh = COALESCE(EXCLUDED.primary_name_zh, legal_entities.primary_name_zh),
                             country_of_incorporation = EXCLUDED.country_of_incorporation,
                             lei = EXCLUDED.lei
                         """,
@@ -232,6 +238,10 @@ class ReferentialRepository:
 
     def _canonical_entity_id(self, exchange: str, ticker: str) -> str:
         return f"ENTITY_{self._safe_token(exchange)}_{self._safe_token(ticker)}"
+
+    def _stable_identifier_id(self, prefix: str, entity_id: str, value: str) -> str:
+        digest = hashlib.md5(value.encode("utf-8")).hexdigest()[:12].upper()
+        return f"ID_{self._safe_token(entity_id)}_{prefix}_{digest}"
 
     def find_entity_convergence_candidates(self) -> dict[str, Any]:
         with get_connection(self.config) as conn:
@@ -442,6 +452,368 @@ class ReferentialRepository:
 
                                         cur.execute("DELETE FROM legal_entities WHERE entity_id = %s", (legacy_id,))
                                         summary["deleted_legal_entities"] += cur.rowcount
+
+            conn.commit()
+
+        return summary
+
+    def backfill_chinese_aliases(self, apply: bool = False) -> dict[str, Any]:
+        with get_connection(self.config) as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT entity_id, primary_name_zh
+                    FROM legal_entities
+                    ORDER BY entity_id
+                    """
+                )
+                entity_rows = [dict(row) for row in cur.fetchall()]
+
+                cur.execute(
+                    """
+                    SELECT entity_id, namespace, value
+                    FROM identifiers
+                    WHERE namespace IN ('COMPANY_NAME_ZH', 'ALIAS')
+                    ORDER BY entity_id, namespace, value
+                    """
+                )
+                identifier_rows = [dict(row) for row in cur.fetchall()]
+
+        primary_name_zh_by_entity = {
+            str(row["entity_id"]): str(row.get("primary_name_zh") or "").strip()
+            for row in entity_rows
+        }
+        zh_names_by_entity: dict[str, set[str]] = {entity_id: set() for entity_id in primary_name_zh_by_entity}
+        alias_values_by_entity: dict[str, set[str]] = {entity_id: set() for entity_id in primary_name_zh_by_entity}
+        legacy_group_members: dict[str, set[str]] = {}
+
+        for entity_id, primary_name_zh in primary_name_zh_by_entity.items():
+            if primary_name_zh:
+                zh_names_by_entity.setdefault(entity_id, set()).update(chinese_variants(primary_name_zh))
+
+        for row in identifier_rows:
+            entity_id = str(row.get("entity_id") or "")
+            namespace = str(row.get("namespace") or "")
+            value = str(row.get("value") or "").strip()
+            if not entity_id or not value:
+                continue
+
+            alias_values_by_entity.setdefault(entity_id, set()).add(value)
+            if namespace == "COMPANY_NAME_ZH":
+                zh_names_by_entity.setdefault(entity_id, set()).update(chinese_variants(value))
+            if namespace == "ALIAS" and value.startswith("LEGACY_ENTITY:"):
+                legacy_group_members.setdefault(value, set()).add(entity_id)
+
+        for _, members in legacy_group_members.items():
+            union_names: set[str] = set()
+            for entity_id in members:
+                union_names.update(zh_names_by_entity.get(entity_id, set()))
+            for entity_id in members:
+                zh_names_by_entity.setdefault(entity_id, set()).update(union_names)
+
+        updates: list[tuple[str, str]] = []
+        inserts: list[tuple[str, str, str, str, None]] = []
+
+        for entity_id, zh_names in sorted(zh_names_by_entity.items()):
+            ordered_names = sorted(name for name in zh_names if name)
+            if not ordered_names:
+                continue
+
+            current_primary_name_zh = primary_name_zh_by_entity.get(entity_id, "")
+            preferred_name = current_primary_name_zh or min(ordered_names, key=lambda item: (len(item), item))
+            if preferred_name and preferred_name != current_primary_name_zh:
+                updates.append((preferred_name, entity_id))
+
+            existing_aliases = alias_values_by_entity.get(entity_id, set())
+            for name in ordered_names:
+                if name in existing_aliases:
+                    continue
+                identifier_id = self._stable_identifier_id("ZH_ALIAS", entity_id, name)
+                inserts.append((identifier_id, entity_id, "ALIAS", name, None))
+                existing_aliases.add(name)
+
+        summary: dict[str, Any] = {
+            "apply": bool(apply),
+            "entities_with_zh_aliases": sum(1 for value in zh_names_by_entity.values() if value),
+            "primary_name_zh_updates": len(updates),
+            "alias_inserts": len(inserts),
+            "legacy_link_groups": len(legacy_group_members),
+        }
+
+        if not apply or (not updates and not inserts):
+            return summary
+
+        with get_connection(self.config) as conn:
+            with conn.cursor() as cur:
+                for primary_name_zh, entity_id in updates:
+                    cur.execute(
+                        "UPDATE legal_entities SET primary_name_zh = %s WHERE entity_id = %s",
+                        (primary_name_zh, entity_id),
+                    )
+
+                if inserts:
+                    execute_values(
+                        cur,
+                        """
+                        INSERT INTO identifiers (
+                            identifier_id,
+                            entity_id,
+                            namespace,
+                            value,
+                            valid_from,
+                            valid_to
+                        ) VALUES %s
+                        ON CONFLICT (identifier_id) DO NOTHING
+                        """,
+                        [
+                            (identifier_id, entity_id, namespace, value, date.today(), valid_to)
+                            for identifier_id, entity_id, namespace, value, valid_to in inserts
+                        ],
+                    )
+
+            conn.commit()
+
+        return summary
+
+    def normalize_hkex_sehk_tickers(self, apply: bool = False) -> dict[str, Any]:
+        with get_connection(self.config) as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT instrument_id, entity_id, ticker
+                    FROM instruments
+                    WHERE exchange = 'HKEX'
+                      AND ticker ~ '^SEHK:[0-9]+$'
+                    ORDER BY instrument_id
+                    """
+                )
+                instrument_rows = [dict(row) for row in cur.fetchall()]
+
+                cur.execute(
+                    """
+                    SELECT identifier_id, entity_id, value
+                    FROM identifiers
+                    WHERE namespace = 'ALIAS'
+                      AND value ~ '^SEHK:[0-9]+$'
+                    ORDER BY identifier_id
+                    """
+                )
+                alias_rows = [dict(row) for row in cur.fetchall()]
+
+        def _to_hk_ticker(value: str) -> str:
+            code = value.split(":", 1)[1].strip()
+            return f"{code.zfill(4)}.HK"
+
+        instrument_updates = [
+            {
+                "instrument_id": str(row["instrument_id"]),
+                "entity_id": str(row["entity_id"]),
+                "old_ticker": str(row["ticker"]),
+                "new_ticker": _to_hk_ticker(str(row["ticker"])),
+            }
+            for row in instrument_rows
+        ]
+
+        alias_updates = [
+            {
+                "identifier_id": str(row["identifier_id"]),
+                "entity_id": str(row["entity_id"]),
+                "old_value": str(row["value"]),
+                "new_value": _to_hk_ticker(str(row["value"])),
+            }
+            for row in alias_rows
+        ]
+
+        summary: dict[str, Any] = {
+            "apply": bool(apply),
+            "instrument_updates": len(instrument_updates),
+            "alias_updates": len(alias_updates),
+            "removed_duplicate_instruments": 0,
+            "removed_duplicate_aliases": 0,
+        }
+
+        if not apply or (not instrument_updates and not alias_updates):
+            return summary
+
+        with get_connection(self.config) as conn:
+            with conn.cursor() as cur:
+                for row in instrument_updates:
+                    cur.execute(
+                        "UPDATE instruments SET ticker = %s WHERE instrument_id = %s",
+                        (row["new_ticker"], row["instrument_id"]),
+                    )
+
+                for row in alias_updates:
+                    cur.execute(
+                        "UPDATE identifiers SET value = %s WHERE identifier_id = %s",
+                        (row["new_value"], row["identifier_id"]),
+                    )
+
+                cur.execute(
+                    """
+                    DELETE FROM instruments a
+                    USING instruments b
+                    WHERE a.ctid > b.ctid
+                      AND a.entity_id = b.entity_id
+                      AND a.ticker = b.ticker
+                      AND a.exchange = b.exchange
+                    """
+                )
+                summary["removed_duplicate_instruments"] = cur.rowcount
+
+                cur.execute(
+                    """
+                    DELETE FROM identifiers a
+                    USING identifiers b
+                    WHERE a.ctid > b.ctid
+                      AND a.entity_id = b.entity_id
+                      AND a.namespace = b.namespace
+                      AND a.value = b.value
+                    """
+                )
+                summary["removed_duplicate_aliases"] = cur.rowcount
+
+            conn.commit()
+
+        return summary
+
+    def backfill_hkex_chinese_names(self, apply: bool = False, retries: int = 3) -> dict[str, Any]:
+        def _norm_hk_code(value: str) -> str:
+            text = str(value or "").strip()
+            if not text:
+                return ""
+            digits = "".join(ch for ch in text if ch.isdigit())
+            if not digits:
+                return ""
+            return str(int(digits))
+
+        last_exc: Exception | None = None
+        spot_df = None
+        for attempt in range(max(1, retries)):
+            try:
+                spot_df = ak.stock_hk_spot_em()
+                break
+            except Exception as exc:  # pragma: no cover - network dependent
+                last_exc = exc
+                if attempt + 1 < max(1, retries):
+                    time.sleep(1.5 * (attempt + 1))
+
+        if spot_df is None:
+            if last_exc is not None:
+                raise last_exc
+            raise RuntimeError("Failed to fetch HK spot data")
+
+        code_to_name: dict[str, str] = {}
+        for row in spot_df.to_dict("records"):
+            code = str(row.get("代码") or "").strip()
+            name = str(row.get("名称") or "").strip()
+            if code and name:
+                norm_code = _norm_hk_code(code)
+                if norm_code:
+                    code_to_name[norm_code] = name
+
+        with get_connection(self.config) as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT DISTINCT le.entity_id, i.ticker, le.primary_name_zh
+                    FROM legal_entities le
+                    JOIN instruments i ON i.entity_id = le.entity_id
+                    WHERE i.exchange = 'HKEX'
+                      AND i.ticker ~ '^[0-9]{4}\\.HK$'
+                    ORDER BY le.entity_id, i.ticker
+                    """
+                )
+                hk_rows = [dict(row) for row in cur.fetchall()]
+
+                cur.execute(
+                    """
+                    SELECT entity_id, namespace, value
+                    FROM identifiers
+                    WHERE namespace IN ('ALIAS', 'COMPANY_NAME_ZH')
+                    """
+                )
+                existing_identifiers = [dict(row) for row in cur.fetchall()]
+
+        seen_values = {
+            (str(row.get("entity_id") or ""), str(row.get("namespace") or ""), str(row.get("value") or ""))
+            for row in existing_identifiers
+        }
+
+        primary_updates: list[tuple[str, str]] = []
+        identifier_inserts: list[tuple[str, str, str, str, date, None]] = []
+        miss_count = 0
+
+        for row in hk_rows:
+            entity_id = str(row.get("entity_id") or "")
+            ticker = str(row.get("ticker") or "")
+            primary_name_zh = str(row.get("primary_name_zh") or "").strip()
+            if not entity_id or not ticker:
+                continue
+
+            code = _norm_hk_code(ticker.split(".", 1)[0])
+            zh_name = code_to_name.get(code)
+            if not zh_name:
+                miss_count += 1
+                continue
+
+            if not primary_name_zh:
+                primary_updates.append((zh_name, entity_id))
+
+            for value in chinese_variants(zh_name):
+                key_zh = (entity_id, "COMPANY_NAME_ZH", value)
+                if key_zh not in seen_values:
+                    identifier_id = self._stable_identifier_id("ZH", entity_id, value)
+                    identifier_inserts.append((identifier_id, entity_id, "COMPANY_NAME_ZH", value, date.today(), None))
+                    seen_values.add(key_zh)
+
+                key_alias = (entity_id, "ALIAS", value)
+                if key_alias not in seen_values:
+                    identifier_id = self._stable_identifier_id("ALIAS_ZH", entity_id, value)
+                    identifier_inserts.append((identifier_id, entity_id, "ALIAS", value, date.today(), None))
+                    seen_values.add(key_alias)
+
+        summary: dict[str, Any] = {
+            "apply": bool(apply),
+            "hk_entities_scanned": len(hk_rows),
+            "hk_code_name_map_size": len(code_to_name),
+            "primary_name_zh_updates": len(primary_updates),
+            "identifier_inserts": len(identifier_inserts),
+            "hk_rows_without_name_match": miss_count,
+        }
+
+        if not apply or (not primary_updates and not identifier_inserts):
+            return summary
+
+        with get_connection(self.config) as conn:
+            with conn.cursor() as cur:
+                for zh_name, entity_id in primary_updates:
+                    cur.execute(
+                        """
+                        UPDATE legal_entities
+                        SET primary_name_zh = %s
+                        WHERE entity_id = %s
+                          AND (primary_name_zh IS NULL OR btrim(primary_name_zh) = '')
+                        """,
+                        (zh_name, entity_id),
+                    )
+
+                if identifier_inserts:
+                    execute_values(
+                        cur,
+                        """
+                        INSERT INTO identifiers (
+                            identifier_id,
+                            entity_id,
+                            namespace,
+                            value,
+                            valid_from,
+                            valid_to
+                        ) VALUES %s
+                        ON CONFLICT (identifier_id) DO NOTHING
+                        """,
+                        identifier_inserts,
+                    )
 
             conn.commit()
 

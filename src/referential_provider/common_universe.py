@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -11,6 +12,8 @@ import akshare as ak
 import requests
 import yfinance as yf
 from bs4 import BeautifulSoup
+
+from .text_utils import chinese_variants
 
 
 _WIKI_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; lobster-referential-sync/1.0)"}
@@ -28,6 +31,10 @@ def _norm_text(value: str | None) -> str:
 
 def _norm_ticker(value: str) -> str:
     return _norm_text(value).upper()
+
+
+def _stable_identifier_suffix(value: str) -> str:
+    return hashlib.md5(value.encode("utf-8")).hexdigest()[:12].upper()
 
 
 @dataclass
@@ -403,6 +410,20 @@ def build_import_payload(records: list[ConstituentRecord]) -> tuple[dict[str, An
                     "valid_to": None,
                 }
             )
+
+            for variant in chinese_variants(name_zh):
+                if variant == name_zh:
+                    continue
+                identifiers.append(
+                    {
+                        "identifier_id": f"ID_{_safe_token(entity_id)}_ZH_ALIAS_{_stable_identifier_suffix(variant)}",
+                        "entity_id": entity_id,
+                        "namespace": "ALIAS",
+                        "value": variant,
+                        "valid_from": value["valid_from"],
+                        "valid_to": None,
+                    }
+                )
 
         identifiers.append(
             {
