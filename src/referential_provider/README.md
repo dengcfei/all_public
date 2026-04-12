@@ -31,6 +31,18 @@ Import JSON payload:
 python -m src.referential_provider.cli import --input src/referential_provider/sample_import.json
 ```
 
+Sync common production universes (dry-run + snapshot only):
+
+```bash
+python -m src.referential_provider.cli sync-common
+```
+
+Sync common production universes and apply into PostgreSQL:
+
+```bash
+python -m src.referential_provider.cli sync-common --apply
+```
+
 Start API server:
 
 ```bash
@@ -58,3 +70,14 @@ If `REFERENTIAL_ADMIN_TOKEN` is set, `POST /import` requires `X-Admin-Token` hea
 Defaults are set to your remote PostgreSQL endpoint. You can override with CLI options or env vars:
 
 - `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PGSSLMODE`
+
+## Common Universe Scope (V1)
+
+- S&P 500 (Wikipedia constituents page)
+- Nasdaq-100 (Wikipedia constituents table)
+- Hang Seng Index (Wikipedia constituents table)
+- Hang Seng Tech (official HSI dashboard constituents endpoint, current top holdings)
+- CSI300 (CSIndex constituents via Akshare)
+- CSI500 (CSIndex constituents via Akshare)
+
+The sync process is fully codified in `common_universe.py` and reusable for scheduled updates.
