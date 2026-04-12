@@ -1,0 +1,222 @@
+{
+  "legal_entities": [
+    {
+      "entity_id": "ENTITY_HKEX_9888_HK",
+      "primary_name_en": "Baidu",
+      "primary_name_zh": "百度",
+      "country_of_incorporation": "KY",
+      "lei": null
+    },
+    {
+      "entity_id": "ENTITY_HKEX_9618_HK",
+      "primary_name_en": "JD.com",
+      "primary_name_zh": "京东",
+      "country_of_incorporation": "KY",
+      "lei": null
+    },
+    {
+      "entity_id": "ENTITY_HKEX_9626_HK",
+      "primary_name_en": "Bilibili",
+      "primary_name_zh": "哔哩哔哩",
+      "country_of_incorporation": "KY",
+      "lei": null
+    },
+    {
+      "entity_id": "ENTITY_HKEX_SEHK_2015",
+      "primary_name_en": "Li Auto",
+      "primary_name_zh": "理想汽车",
+      "country_of_incorporation": "KY",
+      "lei": null
+    },
+    {
+      "entity_id": "ENTITY_HKEX_9866_HK",
+      "primary_name_en": "NIO",
+      "primary_name_zh": "蔚来",
+      "country_of_incorporation": "KY",
+      "lei": null
+    },
+    {
+      "entity_id": "ENTITY_HKEX_9868_HK",
+      "primary_name_en": "XPeng",
+      "primary_name_zh": "小鹏汽车",
+      "country_of_incorporation": "KY",
+      "lei": null
+    }
+  ],
+  "instruments": [
+    {
+      "instrument_id": "INST_HKEX_9888_HK",
+      "entity_id": "ENTITY_HKEX_9888_HK",
+      "ticker": "9888.HK",
+      "exchange": "HKEX",
+      "currency": "HKD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": true,
+      "valid_from": "2021-03-23",
+      "valid_to": null
+    },
+    {
+      "instrument_id": "INST_NASDAQ_BIDU",
+      "entity_id": "ENTITY_HKEX_9888_HK",
+      "ticker": "BIDU",
+      "exchange": "NASDAQ",
+      "currency": "USD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": false,
+      "valid_from": "2005-08-05",
+      "valid_to": null
+    },
+    {
+      "instrument_id": "INST_HKEX_9618_HK",
+      "entity_id": "ENTITY_HKEX_9618_HK",
+      "ticker": "9618.HK",
+      "exchange": "HKEX",
+      "currency": "HKD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": true,
+      "valid_from": "2020-06-18",
+      "valid_to": null
+    },
+    {
+      "instrument_id": "INST_NASDAQ_JD",
+      "entity_id": "ENTITY_HKEX_9618_HK",
+      "ticker": "JD",
+      "exchange": "NASDAQ",
+      "currency": "USD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": false,
+      "valid_from": "2014-05-22",
+      "valid_to": null
+    },
+    {
+      "instrument_id": "INST_HKEX_9626_HK",
+      "entity_id": "ENTITY_HKEX_9626_HK",
+      "ticker": "9626.HK",
+      "exchange": "HKEX",
+      "currency": "HKD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": true,
+      "valid_from": "2021-03-29",
+      "valid_to": null
+    },
+    {
+      "instrument_id": "INST_NASDAQ_BILI",
+      "entity_id": "ENTITY_HKEX_9626_HK",
+      "ticker": "BILI",
+      "exchange": "NASDAQ",
+      "currency": "USD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": false,
+      "valid_from": "2018-03-28",
+      "valid_to": null
+    },
+    {
+      "instrument_id": "INST_HKEX_2015_HK",
+      "entity_id": "ENTITY_HKEX_SEHK_2015",
+      "ticker": "2015.HK",
+      "exchange": "HKEX",
+      "currency": "HKD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": true,
+      "valid_from": "2021-08-12",
+      "valid_to": null
+    },
+    {
+      "instrument_id": "INST_NASDAQ_LI",
+      "entity_id": "ENTITY_HKEX_SEHK_2015",
+      "ticker": "LI",
+      "exchange": "NASDAQ",
+      "currency": "USD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": false,
+      "valid_from": "2020-07-30",
+      "valid_to": null
+    },
+    {
+      "instrument_id": "INST_HKEX_9866_HK",
+      "entity_id": "ENTITY_HKEX_9866_HK",
+      "ticker": "9866.HK",
+      "exchange": "HKEX",
+      "currency": "HKD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": true,
+      "valid_from": "2022-03-10",
+      "valid_to": null
+    },
+    {
+      "instrument_id": "INST_NYSE_NIO",
+      "entity_id": "ENTITY_HKEX_9866_HK",
+      "ticker": "NIO",
+      "exchange": "NYSE",
+      "currency": "USD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": false,
+      "valid_from": "2018-09-12",
+      "valid_to": null
+    },
+    {
+      "instrument_id": "INST_HKEX_9868_HK",
+      "entity_id": "ENTITY_HKEX_9868_HK",
+      "ticker": "9868.HK",
+      "exchange": "HKEX",
+      "currency": "HKD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": true,
+      "valid_from": "2021-07-07",
+      "valid_to": null
+    },
+    {
+      "instrument_id": "INST_NYSE_XPEV",
+      "entity_id": "ENTITY_HKEX_9868_HK",
+      "ticker": "XPEV",
+      "exchange": "NYSE",
+      "currency": "USD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": false,
+      "valid_from": "2020-08-27",
+      "valid_to": null
+    }
+  ],
+  "identifiers": [
+    {"identifier_id":"ID_ENTITY_HKEX_9888_HK_EN","entity_id":"ENTITY_HKEX_9888_HK","namespace":"COMPANY_NAME_EN","value":"Baidu","valid_from":"2005-08-05","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9888_HK_ZH","entity_id":"ENTITY_HKEX_9888_HK","namespace":"COMPANY_NAME_ZH","value":"百度","valid_from":"2005-08-05","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9888_HK_ALIAS_BIDU","entity_id":"ENTITY_HKEX_9888_HK","namespace":"ALIAS","value":"BIDU","valid_from":"2005-08-05","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9888_HK_ALIAS_9888HK","entity_id":"ENTITY_HKEX_9888_HK","namespace":"ALIAS","value":"9888.HK","valid_from":"2021-03-23","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9888_HK_ALIAS_BAIDU_ZH_T","entity_id":"ENTITY_HKEX_9888_HK","namespace":"ALIAS","value":"百度","valid_from":"2005-08-05","valid_to":null},
+
+    {"identifier_id":"ID_ENTITY_HKEX_9618_HK_EN","entity_id":"ENTITY_HKEX_9618_HK","namespace":"COMPANY_NAME_EN","value":"JD.com","valid_from":"2014-05-22","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9618_HK_ZH","entity_id":"ENTITY_HKEX_9618_HK","namespace":"COMPANY_NAME_ZH","value":"京东","valid_from":"2014-05-22","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9618_HK_ALIAS_JD","entity_id":"ENTITY_HKEX_9618_HK","namespace":"ALIAS","value":"JD","valid_from":"2014-05-22","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9618_HK_ALIAS_9618HK","entity_id":"ENTITY_HKEX_9618_HK","namespace":"ALIAS","value":"9618.HK","valid_from":"2020-06-18","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9618_HK_ALIAS_JD_ZH_T","entity_id":"ENTITY_HKEX_9618_HK","namespace":"ALIAS","value":"京東","valid_from":"2014-05-22","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9618_HK_ALIAS_JD_ZH_S","entity_id":"ENTITY_HKEX_9618_HK","namespace":"ALIAS","value":"京东","valid_from":"2014-05-22","valid_to":null},
+
+    {"identifier_id":"ID_ENTITY_HKEX_9626_HK_EN","entity_id":"ENTITY_HKEX_9626_HK","namespace":"COMPANY_NAME_EN","value":"Bilibili","valid_from":"2018-03-28","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9626_HK_ZH","entity_id":"ENTITY_HKEX_9626_HK","namespace":"COMPANY_NAME_ZH","value":"哔哩哔哩","valid_from":"2018-03-28","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9626_HK_ALIAS_BILI","entity_id":"ENTITY_HKEX_9626_HK","namespace":"ALIAS","value":"BILI","valid_from":"2018-03-28","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9626_HK_ALIAS_9626HK","entity_id":"ENTITY_HKEX_9626_HK","namespace":"ALIAS","value":"9626.HK","valid_from":"2021-03-29","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9626_HK_ALIAS_BILI_ZH_T","entity_id":"ENTITY_HKEX_9626_HK","namespace":"ALIAS","value":"嗶哩嗶哩","valid_from":"2018-03-28","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9626_HK_ALIAS_BILI_ZH_S","entity_id":"ENTITY_HKEX_9626_HK","namespace":"ALIAS","value":"哔哩哔哩","valid_from":"2018-03-28","valid_to":null},
+
+    {"identifier_id":"ID_ENTITY_HKEX_SEHK_2015_EN","entity_id":"ENTITY_HKEX_SEHK_2015","namespace":"COMPANY_NAME_EN","value":"Li Auto","valid_from":"2020-07-30","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_SEHK_2015_ZH","entity_id":"ENTITY_HKEX_SEHK_2015","namespace":"COMPANY_NAME_ZH","value":"理想汽车","valid_from":"2020-07-30","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_SEHK_2015_ALIAS_LI","entity_id":"ENTITY_HKEX_SEHK_2015","namespace":"ALIAS","value":"LI","valid_from":"2020-07-30","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_SEHK_2015_ALIAS_2015HK","entity_id":"ENTITY_HKEX_SEHK_2015","namespace":"ALIAS","value":"2015.HK","valid_from":"2021-08-12","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_SEHK_2015_ALIAS_LIAUTO_ZH_T","entity_id":"ENTITY_HKEX_SEHK_2015","namespace":"ALIAS","value":"理想汽車","valid_from":"2020-07-30","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_SEHK_2015_ALIAS_LIAUTO_ZH_S","entity_id":"ENTITY_HKEX_SEHK_2015","namespace":"ALIAS","value":"理想汽车","valid_from":"2020-07-30","valid_to":null},
+
+    {"identifier_id":"ID_ENTITY_HKEX_9866_HK_EN","entity_id":"ENTITY_HKEX_9866_HK","namespace":"COMPANY_NAME_EN","value":"NIO","valid_from":"2018-09-12","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9866_HK_ZH","entity_id":"ENTITY_HKEX_9866_HK","namespace":"COMPANY_NAME_ZH","value":"蔚来","valid_from":"2018-09-12","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9866_HK_ALIAS_NIO","entity_id":"ENTITY_HKEX_9866_HK","namespace":"ALIAS","value":"NIO","valid_from":"2018-09-12","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9866_HK_ALIAS_9866HK","entity_id":"ENTITY_HKEX_9866_HK","namespace":"ALIAS","value":"9866.HK","valid_from":"2022-03-10","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9866_HK_ALIAS_NIO_ZH_T","entity_id":"ENTITY_HKEX_9866_HK","namespace":"ALIAS","value":"蔚來","valid_from":"2018-09-12","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9866_HK_ALIAS_NIO_ZH_S","entity_id":"ENTITY_HKEX_9866_HK","namespace":"ALIAS","value":"蔚来","valid_from":"2018-09-12","valid_to":null},
+
+    {"identifier_id":"ID_ENTITY_HKEX_9868_HK_EN","entity_id":"ENTITY_HKEX_9868_HK","namespace":"COMPANY_NAME_EN","value":"XPeng","valid_from":"2020-08-27","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9868_HK_ZH","entity_id":"ENTITY_HKEX_9868_HK","namespace":"COMPANY_NAME_ZH","value":"小鹏汽车","valid_from":"2020-08-27","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9868_HK_ALIAS_XPEV","entity_id":"ENTITY_HKEX_9868_HK","namespace":"ALIAS","value":"XPEV","valid_from":"2020-08-27","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9868_HK_ALIAS_9868HK","entity_id":"ENTITY_HKEX_9868_HK","namespace":"ALIAS","value":"9868.HK","valid_from":"2021-07-07","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9868_HK_ALIAS_XPEV_ZH_T","entity_id":"ENTITY_HKEX_9868_HK","namespace":"ALIAS","value":"小鵬汽車","valid_from":"2020-08-27","valid_to":null},
+    {"identifier_id":"ID_ENTITY_HKEX_9868_HK_ALIAS_XPEV_ZH_S","entity_id":"ENTITY_HKEX_9868_HK","namespace":"ALIAS","value":"小鹏汽车","valid_from":"2020-08-27","valid_to":null}
+  ]
+}
