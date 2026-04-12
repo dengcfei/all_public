@@ -1,0 +1,10 @@
+{
+  "ticker": "AAPL",
+  "types": "quarter,annual",
+  "download_dir": "downloads",
+  "state_file": ".data/sec_seen.sqlite3",
+  "interval": 300,
+  "timeout_seconds": 20,
+  "user_agent": "lobster-reports-monitor/1.0 (contact: your-email@example.com)",
+  "lookback_days": 1095
+}
