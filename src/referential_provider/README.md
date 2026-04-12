@@ -31,6 +31,12 @@ Import JSON payload:
 python -m src.referential_provider.cli import --input src/referential_provider/sample_import.json
 ```
 
+One-shot curated batch fix for key CN dual-listed names (Baidu/JD/Bilibili/Li Auto/NIO/XPeng):
+
+```bash
+python -m src.referential_provider.cli import --input src/referential_provider/curated_cn_dual_listings.json
+```
+
 Sync common production universes (dry-run + snapshot only):
 
 ```bash

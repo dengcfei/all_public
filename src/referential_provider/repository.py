@@ -34,11 +34,12 @@ class ReferentialRepository:
         terms = chinese_variants(term)
         upper_terms = [item.upper() for item in terms]
         wildcards = [f"%{item}%" for item in terms]
+        short_ticker_like = bool(re.fullmatch(r"[A-Za-z0-9.:-]{1,4}", term))
         with get_connection(self.config) as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(
                     """
-                    SELECT DISTINCT
+                    SELECT DISTINCT ON (le.entity_id, i.ticker, i.exchange)
                         le.entity_id,
                         le.primary_name_en,
                         le.primary_name_zh,
@@ -55,15 +56,26 @@ class ReferentialRepository:
                     LEFT JOIN identifiers id ON id.entity_id = le.entity_id
                     WHERE
                                                 (upper(i.ticker) = ANY(%s)
-                                                 OR le.primary_name_en ILIKE ANY(%s)
-                                                 OR coalesce(le.primary_name_zh, '') ILIKE ANY(%s)
-                                                 OR coalesce(id.value, '') ILIKE ANY(%s))
+                         OR upper(coalesce(id.value, '')) = ANY(%s)
+                        OR (%s = false AND (
+                            le.primary_name_en ILIKE ANY(%s)
+                            OR coalesce(le.primary_name_zh, '') ILIKE ANY(%s)
+                        )))
                       AND i.valid_from <= %s
                       AND (i.valid_to IS NULL OR i.valid_to >= %s)
-                    ORDER BY le.entity_id, i.is_primary_listing DESC, i.ticker
+                                        ORDER BY le.entity_id, i.ticker, i.exchange, i.is_primary_listing DESC, i.instrument_id
                     LIMIT %s
                     """,
-                                        (upper_terms, wildcards, wildcards, wildcards, as_of_date, as_of_date, max(1, min(limit, 200))),
+                    (
+                        upper_terms,
+                        upper_terms,
+                        short_ticker_like,
+                        wildcards,
+                        wildcards,
+                        as_of_date,
+                        as_of_date,
+                        max(1, min(limit, 200)),
+                    ),
                 )
                 return [dict(row) for row in cur.fetchall()]
 
