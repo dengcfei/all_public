@@ -1,16 +1,17 @@
 # Lobster Listed Reports Skill
 
-A unified project to download and monitor newly disclosed listed-company financial reports from HKEXnews and CNINFO (巨潮资讯).
+A unified project to download and monitor newly disclosed listed-company financial reports from HKEXnews, CNINFO (巨潮资讯), and SEC EDGAR.
 
 ## Features
 
-- Unified entrypoint for two providers: HKEX and CNINFO.
+- Unified entrypoint for three providers: HKEX, CNINFO, and SEC.
 - Pull latest announcement records and watch continuously.
 - Filter by stock code and financial-report type.
 - Download newly discovered report files.
 - Deduplicate with SQLite state.
 - HKEX result-history workflows and PDF metric extraction are preserved.
 - CNINFO workflow supports quarterly, half-year, and annual report filters.
+- SEC workflow supports 10-Q/10-K (and optional 6-K half-year keyword matching).
 
 ## Project Layout
 
@@ -20,8 +21,10 @@ A unified project to download and monitor newly disclosed listed-company financi
 - `src/reports_common/`: shared helpers (download and naming).
 - `src/hkex_financial_monitor/`: HKEX implementation.
 - `src/cninfo_financial_monitor/`: CNINFO implementation.
+- `src/sec_financial_monitor/`: SEC implementation.
 - `config.example.json`: HKEX config template.
 - `config.cninfo.example.json`: CNINFO config template.
+- `config.sec.example.json`: SEC config template.
 
 ## Setup
 
@@ -49,11 +52,24 @@ CNINFO watch:
 python -m src.lobster_reports_monitor.cli cninfo watch --stocks 600519 --market sse --interval 180
 ```
 
+SEC pull:
+
+```bash
+python -m src.lobster_reports_monitor.cli sec pull --ticker AAPL --types quarter,annual --lookback-days 1095
+```
+
+SEC watch:
+
+```bash
+python -m src.lobster_reports_monitor.cli sec watch --ticker AAPL --interval 300
+```
+
 You can still call provider CLIs directly:
 
 ```bash
 python -m src.hkex_financial_monitor.cli pull --pages 2
 python -m src.cninfo_financial_monitor.cli pull --stocks 600519 --market sse
+python -m src.sec_financial_monitor.cli pull --ticker AAPL
 ```
 
 ## HKEX Advanced Commands
@@ -124,10 +140,13 @@ You can also pass `--config config.example.json` and override values via CLI.
 
 For CNINFO, use `--config config.cninfo.example.json`.
 
+For SEC, use `--config config.sec.example.json`.
+
 ## Caveats
 
-- HKEX and CNINFO endpoint formats can change without notice.
+- HKEX, CNINFO, and SEC endpoint formats can change without notice.
 - PDF extraction is heuristic and currently implemented for HKEX result documents.
 - CNINFO filtering is title-based and may include occasional non-financial notices with similar wording.
+- SEC requests should include a valid identifying `--user-agent` with real contact info.
 - Resume behavior depends on local SQLite state and existing files.
 - This project is for monitoring public disclosure records and should respect applicable terms of use.
