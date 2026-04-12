@@ -55,6 +55,24 @@ Apply convergence (merge legacy entity IDs into canonical IDs):
 python -m src.referential_provider.cli converge-legacy-entities --apply
 ```
 
+Backfill simplified/traditional Chinese aliases and missing primary Chinese names:
+
+```bash
+python -m src.referential_provider.cli backfill-chinese-aliases --apply
+```
+
+Normalize legacy HKEX ticker formats (`SEHK:xxxx` -> `xxxx.HK`):
+
+```bash
+python -m src.referential_provider.cli normalize-hkex-sehk-tickers --apply
+```
+
+Backfill HKEX Chinese names and simplified/traditional aliases from market data:
+
+```bash
+python -m src.referential_provider.cli backfill-hkex-chinese-names --apply --retries 5
+```
+
 Start API server:
 
 ```bash
@@ -93,3 +111,8 @@ Defaults are set to your remote PostgreSQL endpoint. You can override with CLI o
 - CSI500 (CSIndex constituents via Akshare)
 
 The sync process is fully codified in `common_universe.py` and reusable for scheduled updates.
+
+Chinese lookup behavior:
+
+- Lookup now expands simplified/traditional Chinese variants automatically.
+- After cross-market convergence, `backfill-chinese-aliases --apply` propagates Chinese aliases across related canonical entities.

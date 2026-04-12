@@ -53,6 +53,25 @@ def parse_args() -> argparse.Namespace:
     )
     converge.add_argument("--apply", action="store_true", help="Apply merge operations to database")
 
+    backfill_zh = sub.add_parser(
+        "backfill-chinese-aliases",
+        help="Backfill simplified/traditional Chinese aliases and primary_name_zh across related entities",
+    )
+    backfill_zh.add_argument("--apply", action="store_true", help="Apply Chinese alias updates to database")
+
+    normalize_hkex = sub.add_parser(
+        "normalize-hkex-sehk-tickers",
+        help="Normalize HKEX ticker format from SEHK:xxxx to xxxx.HK for instruments and aliases",
+    )
+    normalize_hkex.add_argument("--apply", action="store_true", help="Apply HKEX ticker normalization to database")
+
+    backfill_hkex_zh = sub.add_parser(
+        "backfill-hkex-chinese-names",
+        help="Backfill HKEX Chinese names and aliases from Akshare market data",
+    )
+    backfill_hkex_zh.add_argument("--apply", action="store_true", help="Apply HKEX Chinese-name backfill")
+    backfill_hkex_zh.add_argument("--retries", type=int, default=3, help="Retry count for upstream HK data fetch")
+
     serve = sub.add_parser("serve-api", help="Start HTTP API")
     serve.add_argument("--host", default="0.0.0.0")
     serve.add_argument("--port", type=int, default=8010)
@@ -140,6 +159,21 @@ def main() -> int:
 
         if args.command == "converge-legacy-entities":
             output = repo.converge_legacy_entities(apply=bool(args.apply))
+            print(json.dumps({"ok": True, **output}, ensure_ascii=False, default=str, indent=2))
+            return 0
+
+        if args.command == "backfill-chinese-aliases":
+            output = repo.backfill_chinese_aliases(apply=bool(args.apply))
+            print(json.dumps({"ok": True, **output}, ensure_ascii=False, default=str, indent=2))
+            return 0
+
+        if args.command == "normalize-hkex-sehk-tickers":
+            output = repo.normalize_hkex_sehk_tickers(apply=bool(args.apply))
+            print(json.dumps({"ok": True, **output}, ensure_ascii=False, default=str, indent=2))
+            return 0
+
+        if args.command == "backfill-hkex-chinese-names":
+            output = repo.backfill_hkex_chinese_names(apply=bool(args.apply), retries=max(1, int(args.retries)))
             print(json.dumps({"ok": True, **output}, ensure_ascii=False, default=str, indent=2))
             return 0
 
