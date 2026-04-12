@@ -1,0 +1,34 @@
+{
+  "legal_entities": [
+    {
+      "entity_id": "ENTITY_DEMO",
+      "primary_name_en": "Demo Holdings Limited",
+      "primary_name_zh": "演示控股有限公司",
+      "country_of_incorporation": "KY",
+      "lei": "00000000000000000000"
+    }
+  ],
+  "instruments": [
+    {
+      "instrument_id": "INST_DEMO_HK",
+      "entity_id": "ENTITY_DEMO",
+      "ticker": "9999.HK",
+      "exchange": "HKEX",
+      "currency": "HKD",
+      "instrument_type": "EQUITY",
+      "is_primary_listing": true,
+      "valid_from": "2026-01-01",
+      "valid_to": null
+    }
+  ],
+  "identifiers": [
+    {
+      "identifier_id": "ID_DEMO_ALIAS",
+      "entity_id": "ENTITY_DEMO",
+      "namespace": "ALIAS",
+      "value": "DEMO",
+      "valid_from": "2026-01-01",
+      "valid_to": null
+    }
+  ]
+}
