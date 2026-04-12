@@ -47,6 +47,12 @@ def parse_args() -> argparse.Namespace:
         help="Directory to store generated payload snapshots",
     )
 
+    converge = sub.add_parser(
+        "converge-legacy-entities",
+        help="Map legacy entity IDs to canonical IDs and merge duplicate ticker/exchange entities",
+    )
+    converge.add_argument("--apply", action="store_true", help="Apply merge operations to database")
+
     serve = sub.add_parser("serve-api", help="Start HTTP API")
     serve.add_argument("--host", default="0.0.0.0")
     serve.add_argument("--port", type=int, default=8010)
@@ -130,6 +136,11 @@ def main() -> int:
                 output["imported"] = imported
 
             print(json.dumps(output, ensure_ascii=False, default=str, indent=2))
+            return 0
+
+        if args.command == "converge-legacy-entities":
+            output = repo.converge_legacy_entities(apply=bool(args.apply))
+            print(json.dumps({"ok": True, **output}, ensure_ascii=False, default=str, indent=2))
             return 0
 
         if args.command == "serve-api":
