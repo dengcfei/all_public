@@ -43,6 +43,18 @@ Sync common production universes and apply into PostgreSQL:
 python -m src.referential_provider.cli sync-common --apply
 ```
 
+Detect legacy-vs-canonical duplicate entities by ticker+exchange (dry-run):
+
+```bash
+python -m src.referential_provider.cli converge-legacy-entities
+```
+
+Apply convergence (merge legacy entity IDs into canonical IDs):
+
+```bash
+python -m src.referential_provider.cli converge-legacy-entities --apply
+```
+
 Start API server:
 
 ```bash
