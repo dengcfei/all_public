@@ -1,16 +1,16 @@
 ---
 name: lobster-hkex-reports-skill
-description: "Use when: monitoring latest HKEX company financial reports, downloading filings from HKEXnews, and tracking new disclosures by stock code."
+description: "Use when: monitoring listed-company financial reports from HKEX or CNINFO, downloading filings, and tracking new disclosures by stock code."
 ---
 
-# HKEX Financial Report Monitor Skill
+# Listed Financial Report Monitor Skill
 
-This skill provides a practical workflow and scripts to monitor HKEX listed-company disclosures and download new financial reports.
+This skill provides a practical workflow and scripts to monitor listed-company disclosures from HKEX and CNINFO and download new financial reports.
 
 ## What This Skill Does
 
-- Pulls latest disclosure records from HKEX JSON feed used by HKEXnews.
-- Filters likely financial reports (annual/interim/results/ESG and related statements).
+- Pulls latest disclosure records from HKEX and CNINFO endpoints.
+- Filters likely financial reports, including quarterly, half-year, and annual reports.
 - Tracks seen announcement IDs to avoid duplicate processing.
 - Downloads newly discovered report files.
 
@@ -20,21 +20,25 @@ This skill provides a practical workflow and scripts to monitor HKEX listed-comp
 
    pip install -r requirements.txt
 
-2. Pull once:
+2. Pull once from HKEX:
 
    python -m src.hkex_financial_monitor.cli pull --pages 2 --download-dir downloads
 
-3. Watch continuously:
+3. Pull once from CNINFO:
 
-   python -m src.hkex_financial_monitor.cli watch --interval 300 --pages 1
+   python -m src.cninfo_financial_monitor.cli pull --stocks 600519 --market sse --lookback-days 365
+
+4. Watch continuously:
+
+   python -m src.lobster_reports_monitor.cli hkex watch --interval 300 --pages 1
 
 ## Typical Usage
 
 - Track all main-board announcements likely to be financial reports.
-- Track specific stock codes with `--stocks 00005,00700`.
+- Track specific stock codes with `--stocks 00005,00700` (HKEX) or `--stocks 600519` (CNINFO).
 - Use `watch` mode for periodic monitoring.
 
 ## Notes
 
-- Data source is HKEX public disclosure feed endpoint used by the HKEXnews latest announcements page.
-- Endpoint format may change in future; verify `src/hkex_financial_monitor/client.py` if needed.
+- Data sources are HKEX public disclosure endpoints and CNINFO history announcement endpoint.
+- Endpoint formats may change in future; verify `src/hkex_financial_monitor/client.py` and `src/cninfo_financial_monitor/client.py` if needed.

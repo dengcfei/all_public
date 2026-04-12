@@ -1,0 +1,13 @@
+{
+  "market": "sse",
+  "pages": 10,
+  "page_size": 30,
+  "stocks": "600519",
+  "types": "quarter,half,annual",
+  "include_summary": false,
+  "download_dir": "downloads",
+  "state_file": ".data/cninfo_seen.sqlite3",
+  "interval": 180,
+  "timeout_seconds": 20,
+  "lookback_days": 365
+}
